@@ -1,5 +1,12 @@
 {
   "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+  ],
   "exclude": [
-    "../ai-contact/node_modules", "test", "dist", "**/*spec.ts"]
+    "../api-contacts/node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts"
+  ]
 }
