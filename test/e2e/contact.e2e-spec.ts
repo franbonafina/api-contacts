@@ -8,6 +8,7 @@ describe('ContactsController (e2e)', () => {
   const number_random = Math.floor(Math.random() * 900) + 100;
   const email = 'john.doee' + number_random + '@example.com';
   const phone_number = '12272092' + number_random;
+  let contactId = null;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -22,7 +23,7 @@ describe('ContactsController (e2e)', () => {
     await app.close();
   });
 
-  it('/contacts (POST) - Create a new contact', async () => {
+  it('/contacts/create (POST) - Create a new contact', async () => {
     const createDto = {
       person: {
         firstName: 'John',
@@ -49,20 +50,65 @@ describe('ContactsController (e2e)', () => {
     };
 
     const response = await request(app.getHttpServer())
-      .post('/contacts')
+      .post('/contacts/create')
       .send(createDto)
       .expect(201);
 
-    console.log(response);
-
     expect(response.text).toContain('Contact created successfully');
+
+    contactId = JSON.parse(response.text).data.id;
   });
 
-  it('/contacts/:email (GET) - Find contact by email', async () => {
+  it('/contacts/search/email/:email (GET) - Find contact by email', async () => {
     const response = await request(app.getHttpServer())
-      .get(`/contacts/${encodeURIComponent(email)}`)
+      .get(`/contacts/search/email/${encodeURIComponent(email)}`)
       .expect(200);
 
     expect(response.text).toContain('Found contact by email');
+  });
+
+  it('/contacts/search/phone/:phoneNumber (GET) - Find contacts by phone number', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/contacts/search/phone/${encodeURIComponent(phone_number)}`)
+      .expect(200);
+
+    expect(response.text).toContain('Found contact by phone number');
+  });
+
+  it('/contacts/search/personal-data/:query (GET) - Search contacts by personal data', async () => {
+    const queryDto = {
+      firstName: 'John',
+    };
+
+    const response = await request(app.getHttpServer())
+      .get('/contacts/search/personal-data')
+      .query(queryDto)
+      .expect(200);
+
+    expect(response.text).toContain('Found contacts by search criteria');
+  });
+
+  it('/contacts/update/:id (PUT) - Update a contact', async () => {
+    const updateDto = {
+      person: {
+        firstName: 'Updated First Name twice',
+      },
+    };
+
+    const response = await request(app.getHttpServer())
+      .put(`/contacts/update/${encodeURIComponent(contactId)}`)
+      .send(updateDto)
+      .expect(200);
+
+    expect(response.text).toContain('Contact updated successfully');
+    expect(response.text).toContain(updateDto.person.firstName);
+  });
+
+  it('/contacts/delete/:id (DELETE) - Delete a contact', async () => {
+    const response = await request(app.getHttpServer())
+      .delete(`/contacts/delete/${encodeURIComponent(contactId)}`)
+      .expect(200);
+
+    expect(response.text).toContain('Contact deleted');
   });
 });

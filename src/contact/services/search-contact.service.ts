@@ -15,11 +15,29 @@ export class SearchContactService {
   ) {}
 
   async findByEmail(email: string): Promise<Person> {
-    const person = await this.personRepository.findOne({ where: { email } });
+    const person = await this.personRepository.findOne({
+      where: { email },
+      relations: ['addresses', 'phones'],
+    });
+
     if (!person) {
       throw new NotFoundException('Person not found');
     }
+
     return person;
+  }
+
+  async findByPhoneNumber(phoneNumber: string) {
+    const foundContacts = await this.personRepository.find({
+      where: { phones: { number: phoneNumber } },
+      relations: ['addresses', 'phones'],
+    });
+
+    if (!foundContacts || foundContacts.length === 0) {
+      throw new NotFoundException('Contacts not found');
+    }
+
+    return foundContacts;
   }
 
   async findByPersonalData(queryDto: QueryPersonalDataDto): Promise<Person[]> {
@@ -59,28 +77,6 @@ export class SearchContactService {
     }
 
     return await queryBuilder.getMany();
-  }
-
-  async findByPhoneNumber(phoneNumber: string, phoneType: string) {
-    // Implement your logic to find contacts by phone number and type
-    const queryBuilder = this.personRepository
-      .createQueryBuilder('person')
-      .leftJoinAndSelect('person.phones', 'phone')
-      .leftJoinAndSelect('phone.phoneType', 'phoneType');
-
-    if (phoneNumber) {
-      queryBuilder.andWhere('phone.number = :phoneNumber', { phoneNumber });
-    }
-    if (phoneType) {
-      queryBuilder.andWhere('phoneType.typeName = :phoneType', { phoneType });
-    }
-
-    const foundContacts = await queryBuilder.getMany();
-    if (!foundContacts || foundContacts.length === 0) {
-      throw new NotFoundException('Contacts not found');
-    }
-
-    return foundContacts;
   }
 
   async findIfAlreadyExistsByEmailOrPhone(

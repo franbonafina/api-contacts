@@ -1,80 +1,91 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Person } from '../entities/person.entity';
-import { Repository } from 'typeorm';
-import { Address } from '../entities/address.entity';
-import { Phone } from '../entities/phone.entity';
+import { EntityManager, Repository } from 'typeorm';
 import { UpdateContactDto } from '../controllers/dtos/update-contact.dto';
 
-@Injectable()
+Injectable();
 export class UpdateContactService {
   constructor(
     @InjectRepository(Person)
     private readonly personRepository: Repository<Person>,
-    @InjectRepository(Address)
-    private readonly addressRepository: Repository<Address>,
-    @InjectRepository(Phone)
-    private readonly phoneRepository: Repository<Phone>,
   ) {}
 
   async update(
     id: number,
     updateContactDto: UpdateContactDto,
   ): Promise<Person> {
-    const person = await this.personRepository.findOne({
-      where: { id },
-      relations: ['phones', 'addresses'],
-    });
+    console.log(
+      `Updated the contact with details: ${id}, ${JSON.stringify(
+        updateContactDto,
+      )}`,
+    );
+
+    // Check if the person exists
+    const person = await this.personRepository.findOne({ where: { id } });
     if (!person) {
       throw new NotFoundException('Contact not found');
     }
 
-    if (updateContactDto.person) {
-      const { firstName, lastName, email, dateOfBirth } =
-        updateContactDto.person;
-      if (firstName) person.firstName = firstName;
-      if (lastName) person.lastName = lastName;
-      if (email) person.email = email;
-      if (dateOfBirth) person.dateOfBirth = dateOfBirth;
-    }
-
-    if (updateContactDto.phones) {
-      for (const updatePhoneDto of updateContactDto.phones) {
-        let phone;
-        if (updatePhoneDto.id) {
-          phone = person.phones.find((p) => p.id === updatePhoneDto.id);
-        }
-        if (!phone) {
-          phone = this.phoneRepository.create({ person });
-          person.phones.push(phone);
-        }
-        if (updatePhoneDto.number) phone.number = updatePhoneDto.number;
+    // Check if the email is being updated and if it's already in use by another person
+    if (
+      updateContactDto.person?.email &&
+      updateContactDto.person.email !== person.email
+    ) {
+      const existingPersonWithEmail = await this.personRepository.findOne({
+        where: { email: updateContactDto.person.email },
+      });
+      if (existingPersonWithEmail) {
+        throw new HttpException(
+          'Email is already in use',
+          HttpStatus.BAD_REQUEST,
+        );
       }
     }
 
-    if (updateContactDto.addresses) {
-      for (const updateAddressDto of updateContactDto.addresses) {
-        let address;
-        if (updateAddressDto.id) {
-          address = person.addresses.find((a) => a.id === updateAddressDto.id);
-        }
-        if (!address) {
-          address = this.addressRepository.create({ person });
-          person.addresses.push(address);
-        }
-        if (updateAddressDto.locality)
-          address.locality = updateAddressDto.locality;
-        if (updateAddressDto.street) address.street = updateAddressDto.street;
-        if (updateAddressDto.number) address.number = updateAddressDto.number;
-        if (updateAddressDto.notes) address.notes = updateAddressDto.notes;
+    // Create a new query runner and start a transaction
+    const queryRunner =
+      this.personRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Update person fields
+      if (updateContactDto.person) {
+        const { firstName, lastName, email, dateOfBirth } =
+          updateContactDto.person;
+        if (firstName) person.firstName = firstName;
+        if (lastName) person.lastName = lastName;
+        if (email) person.email = email;
+        if (dateOfBirth) person.dateOfBirth = dateOfBirth;
       }
+
+      // Save updated person entity within the transaction
+      await queryRunner.manager.save(Person, person);
+
+      // Commit the transaction
+      await queryRunner.commitTransaction();
+
+      // Return the updated person
+      return person;
+    } catch (err) {
+      // Rollback the transaction in case of an error
+      await queryRunner.rollbackTransaction();
+
+      // Log the error and rethrow it
+      console.error(`The contact UPDATE operation failed due to: ${err}`);
+      throw new HttpException(
+        'Failed to update contact',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    } finally {
+      // Release the query runner
+      await queryRunner.release();
     }
-
-    await this.personRepository.save(person);
-
-    return await this.personRepository.findOne({
-      where: { id },
-      relations: ['phones', 'addresses'],
-    });
   }
 }

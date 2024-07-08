@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Person } from '../entities/person.entity';
 import { Repository } from 'typeorm';
@@ -22,9 +27,29 @@ export class RemoveContactService {
       relations: ['phones', 'addresses'],
     });
     if (!person) {
-      throw new NotFoundException('Person not found');
+      throw new NotFoundException('Contact not found');
     }
 
-    await this.personRepository.remove(person);
+    const queryRunner =
+      this.personRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.remove(person.phones);
+      await queryRunner.manager.remove(person.addresses);
+      await queryRunner.manager.remove(person);
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      console.error(`The contact DELETE operation failed due to: ${err}`);
+      throw new HttpException(
+        'Failed to delete contact',
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

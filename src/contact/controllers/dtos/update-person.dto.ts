@@ -3,6 +3,9 @@ import { IsOptional, IsNotEmpty, IsEmail, IsDateString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class UpdatePersonDto {
+  @IsNotEmpty()
+  readonly id: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsNotEmpty()

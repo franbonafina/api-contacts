@@ -6,8 +6,8 @@ import {
   Delete,
   Body,
   Param,
-  NotFoundException,
-} from '@nestjs/common';
+  NotFoundException, Query
+} from "@nestjs/common";
 import { ApiTags, ApiResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 import { CreateContactDto } from './dtos/create-contact.dto';
 import { UpdateContactDto } from './dtos/update-contact.dto';
@@ -27,7 +27,7 @@ export class ContactsController {
     private readonly removeContactsService: RemoveContactService,
   ) {}
 
-  @Post()
+  @Post('create')
   @ApiResponse({ status: 201, description: 'Contact created successfully' })
   async create(@Body() createContactDto: CreateContactDto) {
     const createdContact = await this.createContactsService.create(
@@ -44,7 +44,7 @@ export class ContactsController {
     };
   }
 
-  @Get(':email')
+  @Get('search/email/:email')
   @ApiResponse({ status: 200, description: 'Found contact by email' })
   @ApiNotFoundResponse({ description: 'Contact not found' })
   async findByEmail(@Param('email') email: string) {
@@ -59,12 +59,28 @@ export class ContactsController {
     };
   }
 
-  @Get('search')
+  @Get('search/phone/:number')
+  @ApiResponse({
+    status: 200,
+    description: 'Found contacts by phone number',
+  })
+  async findByPhoneNumber(@Param('phoneNumber') phoneNumber: string) {
+    const foundContacts = await this.searchContactsService.findByPhoneNumber(
+      phoneNumber,
+    );
+    return {
+      statusCode: 200,
+      message: 'Found contact by phone number',
+      data: foundContacts,
+    };
+  }
+
+  @Get('search/personal-data')
   @ApiResponse({
     status: 200,
     description: 'Found contacts by search criteria',
   })
-  async findByQuery(@Body() queryDto: QueryPersonalDataDto) {
+  async findByQuery(@Query() queryDto: QueryPersonalDataDto) {
     const foundContacts = await this.searchContactsService.findByPersonalData(
       queryDto,
     );
@@ -75,27 +91,7 @@ export class ContactsController {
     };
   }
 
-  @Get('phone')
-  @ApiResponse({
-    status: 200,
-    description: 'Found contacts by phone number and type',
-  })
-  async findByPhoneNumber(
-    @Body('phoneNumber') phoneNumber: string,
-    @Body('phoneType') phoneType: string,
-  ) {
-    const foundContacts = await this.searchContactsService.findByPhoneNumber(
-      phoneNumber,
-      phoneType,
-    );
-    return {
-      statusCode: 200,
-      message: 'Found contacts by phone number and type',
-      data: foundContacts,
-    };
-  }
-
-  @Put(':id')
+  @Put('update/:id')
   @ApiResponse({ status: 200, description: 'Contact updated successfully' })
   @ApiNotFoundResponse({ description: 'Contact not found' })
   async update(
@@ -106,6 +102,10 @@ export class ContactsController {
       id,
       updateContactDto,
     );
+
+    console.log(
+      `The contact with ID ${updatedContact.id} was successfully updated.`,
+    );
     return {
       statusCode: 200,
       message: 'Contact updated successfully',
@@ -113,7 +113,7 @@ export class ContactsController {
     };
   }
 
-  @Delete(':id')
+  @Delete('delete/:id')
   @ApiResponse({ status: 200, description: 'Contact deleted successfully' })
   @ApiNotFoundResponse({ description: 'Contact not found' })
   async delete(@Param('id') id: number) {
