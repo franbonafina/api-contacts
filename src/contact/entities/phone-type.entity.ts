@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Phone } from './phone.entity';
 
-@Entity()
+@Entity({ name: 'PhoneType' })
 export class PhoneType {
   @PrimaryGeneratedColumn()
   id: number;
@@ -9,6 +9,6 @@ export class PhoneType {
   @Column({ unique: true })
   typeName: string;
 
-  @OneToMany(() => Phone, phone => phone.phoneType)
+  @OneToMany(() => Phone, (phone) => phone.phoneType)
   phones: Phone[];
 }
