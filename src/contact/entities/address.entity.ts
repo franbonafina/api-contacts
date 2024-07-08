@@ -1,12 +1,15 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Person } from './person.entity';
 
-@Entity()
+@Entity({ name: 'Address' })
 export class Address {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Person, person => person.addresses)
+  @ManyToOne(() => Person, (person) => person.addresses, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
   person: Person;
 
   @Column()
