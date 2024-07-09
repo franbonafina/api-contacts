@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
+import { HttpException, ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filter/http-exception.filter';
-import { HttpException, ValidationPipe } from '@nestjs/common';
-import { useContainer } from 'class-validator';
 import { ResponseInterceptor } from './common/interceptors/http-response.interceptor';
 
 async function bootstrap() {
@@ -26,8 +27,18 @@ async function bootstrap() {
       },
     }),
   );
-
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
+
+  const options = new DocumentBuilder()
+    .setTitle('Contact Management API')
+    .setDescription(
+      'API for managing contacts including CRUD operations for contacts, addresses, and phones.',
+    )
+    .setVersion('1.0')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, options);
+  SwaggerModule.setup('api', app, document);
 
   await app.listen(3000);
 }

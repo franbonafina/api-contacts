@@ -1,45 +1,29 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsDateString, IsOptional, IsString } from "class-validator";
 import { Transform } from 'class-transformer';
 
 export class QueryPersonalDataDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ required: false })
   @IsOptional()
   @IsString()
   @Transform(({ value }) => value.toLowerCase())
   firstName?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ required: false })
   @IsOptional()
   @IsString()
   @Transform(({ value }) => value.toLowerCase())
   lastName?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ required: false })
   @IsOptional()
   @IsString()
   @Transform(({ value }) => value.toLowerCase())
   email?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ required: false })
   @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value.toLowerCase())
-  locality?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value.toLowerCase())
-  street?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value.toLowerCase())
-  phone?: string;
-
-  @ApiPropertyOptional()
-  @IsString()
-  value: string;
+  @IsDateString()
+  @Transform(({ value }) => new Date(value).toISOString())
+  dateOfBirth?: string;
 }

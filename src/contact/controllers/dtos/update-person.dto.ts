@@ -3,9 +3,6 @@ import { IsOptional, IsNotEmpty, IsEmail, IsDateString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class UpdatePersonDto {
-  @IsNotEmpty()
-  readonly id: number;
-
   @ApiPropertyOptional()
   @IsOptional()
   @IsNotEmpty()
@@ -22,9 +19,12 @@ export class UpdatePersonDto {
   @IsEmail()
   readonly email?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    example: '1990-01-01',
+    description: 'Date of birth of the contact in YYYY-MM-DD format',
+  })
   @IsOptional()
   @IsDateString()
-  @Transform(({ value }) => value.toISOString(), { toClassOnly: true })
+  @Transform(({ value }) => new Date(value).toISOString())
   readonly dateOfBirth?: string;
 }

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Person } from '../entities/person.entity';
-import { Brackets, In, Repository } from "typeorm";
+import { In, Repository } from 'typeorm';
 import { QueryPersonalDataDto } from '../controllers/dtos/query-personal-data.dto';
 import { Phone } from '../entities/phone.entity';
 
@@ -17,7 +17,7 @@ export class SearchContactService {
   async findByEmail(email: string): Promise<Person> {
     const person = await this.personRepository.findOne({
       where: { email },
-      relations: ['addresses', 'phones'],
+      relations: ['addresses', 'phones', 'phones.phoneType'],
     });
 
     if (!person) {
@@ -27,54 +27,52 @@ export class SearchContactService {
     return person;
   }
 
-  async findByPhoneNumber(phoneNumber: string) {
-    const foundContacts = await this.personRepository.find({
-      where: { phones: { number: phoneNumber } },
-      relations: ['addresses', 'phones'],
-    });
+  async findByPhoneNumberAndType(phoneNumber: string, phoneTypeId: number) {
+    const foundContact = await this.phoneRepository
+      .createQueryBuilder('phone')
+      .leftJoinAndSelect('phone.person', 'person')
+      .leftJoinAndSelect('person.addresses', 'address')
+      .leftJoinAndSelect('person.phones', 'phones')
+      .where('phone.number = :phoneNumber', { phoneNumber })
+      .andWhere('phone.phoneTypeId = :phoneTypeId', { phoneTypeId })
+      .getMany();
 
-    if (!foundContacts || foundContacts.length === 0) {
+    if (!foundContact || foundContact.length === 0) {
       throw new NotFoundException('Contacts not found');
     }
 
-    return foundContacts;
+    return foundContact.map((phone) => phone.person);
   }
 
   async findByPersonalData(queryDto: QueryPersonalDataDto): Promise<Person[]> {
-    const { firstName, lastName, email, locality, street, phone, value } =
-      queryDto;
-    let queryBuilder = this.personRepository.createQueryBuilder('person');
+    const { firstName, lastName, email, dateOfBirth } = queryDto;
+    const queryBuilder = this.personRepository.createQueryBuilder('person');
 
     if (firstName) {
-      queryBuilder = queryBuilder.where('person.firstName LIKE :value', {
-        value: `%${value}%`,
+      queryBuilder.andWhere('person.firstName LIKE :firstName', {
+        firstName: `%${firstName}%`,
       });
     }
     if (lastName) {
-      queryBuilder = queryBuilder.orWhere('person.lastName LIKE :value', {
-        value: `%${value}%`,
+      queryBuilder.andWhere('person.lastName LIKE :lastName', {
+        lastName: `%${lastName}%`,
       });
     }
     if (email) {
-      queryBuilder = queryBuilder.orWhere('person.email LIKE :value', {
-        value: `%${value}%`,
+      queryBuilder.andWhere('person.email LIKE :email', {
+        email: `%${email}%`,
       });
     }
-    if (locality) {
-      queryBuilder = queryBuilder
-        .leftJoin('person.addresses', 'address')
-        .andWhere('address.locality LIKE :value', { value: `%${value}%` });
+    if (dateOfBirth) {
+      queryBuilder.andWhere('person.dateOfBirth = :dateOfBirth', {
+        dateOfBirth,
+      });
     }
-    if (street) {
-      queryBuilder = queryBuilder
-        .leftJoin('person.addresses', 'address')
-        .andWhere('address.street LIKE :value', { value: `%${value}%` });
-    }
-    if (phone) {
-      queryBuilder = queryBuilder
-        .leftJoin('person.phones', 'phone')
-        .andWhere('phone.number LIKE :value', { value: `%${value}%` });
-    }
+
+    queryBuilder
+      .leftJoinAndSelect('person.phones', 'phones')
+      .leftJoinAndSelect('person.addresses', 'addresses')
+      .leftJoinAndSelect('phones.phoneType', 'phoneType');
 
     return await queryBuilder.getMany();
   }

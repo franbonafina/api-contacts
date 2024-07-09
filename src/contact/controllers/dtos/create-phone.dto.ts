@@ -1,23 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsPhoneNumber, IsIn, IsString } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { PhoneType } from '../../entities/phone-type.entity';
+import { IsNotEmpty, IsPhoneNumber, ValidateNested } from 'class-validator';
+import { CreatePhoneTypeDto } from './create-phone-type.dto';
+import { Type } from 'class-transformer';
 
 export class CreatePhoneDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: '+5491137879077',
+    description: 'Phone number of the contact',
+  })
   @IsNotEmpty()
   @IsPhoneNumber()
   readonly number: string;
 
   @ApiProperty()
+  @ValidateNested()
+  @Type(() => CreatePhoneTypeDto)
   @IsNotEmpty()
-  @IsIn([1, 2], {
-    message: 'Phone type must be either 1 (LANDLINE) or 2 (MOBILE)',
-  })
-  @Transform(({ value }) => {
-    const phoneType = new PhoneType();
-    phoneType.id = value;
-    return phoneType;
-  })
-  readonly phoneType: PhoneType;
+  readonly phoneType: CreatePhoneTypeDto;
 }

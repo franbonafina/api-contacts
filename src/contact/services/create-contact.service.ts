@@ -20,7 +20,7 @@ export class CreateContactService {
   ) {}
 
   async create(createContactDto: CreateContactDto): Promise<Person> {
-    const { person, addresses, phones } = createContactDto;
+    const { personDto, addressesDtos, phonesDtos } = createContactDto;
     console.log(
       `Creating new contact with details: ${JSON.stringify(createContactDto)}`,
     );
@@ -28,8 +28,8 @@ export class CreateContactService {
     // Check if already exist the contact by email or phone-number
     const contactExists =
       await this.searchContactsService.findIfAlreadyExistsByEmailOrPhone(
-        person.email,
-        phones.map((p) => p.number),
+        personDto.email,
+        phonesDtos.map((p) => p.number),
       );
     if (contactExists) {
       throw new HttpException(
@@ -45,26 +45,29 @@ export class CreateContactService {
     await queryRunner.startTransaction();
 
     try {
-      //Create person
-      const newPerson = this.personRepository.create(person);
-      await queryRunner.manager.save(newPerson);
+      // Create person
+      const person = this.personRepository.create({
+        ...personDto,
+      });
+      await queryRunner.manager.save(person);
 
-      //Create address
-      const newAddresses = addresses.map((address) =>
-        this.addressRepository.create({ ...address, person: newPerson }),
+      // Create phones
+      const phones = phonesDtos.map((p) =>
+        this.phoneRepository.create({ ...p, person: person }),
       );
-      await queryRunner.manager.save(newAddresses);
+      await queryRunner.manager.save(phones);
 
-      //Create phones
-      const newPhones = phones.map((phone) =>
-        this.phoneRepository.create({ ...phone, person: newPerson }),
+      // Create addresses
+      const addresses = addressesDtos.map((addr) =>
+        this.addressRepository.create({ ...addr, person: person }),
       );
-      await queryRunner.manager.save(newPhones);
+      await queryRunner.manager.save(addresses);
 
       //Commit and release transaction
       await queryRunner.commitTransaction();
       await queryRunner.release();
-      return newPerson;
+
+      return person;
     } catch (err) {
       await queryRunner.rollbackTransaction();
       console.log(`The contact create operation failed due to: ${err}`);

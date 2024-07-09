@@ -9,17 +9,17 @@ export class CreateContactDto {
   @ApiProperty({ type: CreatePersonDto })
   @ValidateNested()
   @Type(() => CreatePersonDto)
-  readonly person: CreatePersonDto;
+  readonly personDto: CreatePersonDto;
 
   @ApiProperty({ type: [CreateAddressDto] })
+  //@MinLength(1, { message: 'At least one address must be provided' })
   @ValidateNested({ each: true })
   @Type(() => CreateAddressDto)
-  @MinLength(1, { message: 'At least one address must be provided' })
-  readonly addresses: CreateAddressDto[];
+  readonly addressesDtos: CreateAddressDto[];
 
   @ApiProperty({ type: [CreatePhoneDto] })
+  //@MinLength(1, { message: 'At least one address must be provided' })
   @ValidateNested({ each: true })
   @Type(() => CreatePhoneDto)
-  @MinLength(1, { message: 'At least one address must be provided' })
-  readonly phones: CreatePhoneDto[];
+  readonly phonesDtos: CreatePhoneDto[];
 }
