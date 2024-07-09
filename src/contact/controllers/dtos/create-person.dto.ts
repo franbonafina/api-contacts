@@ -11,10 +11,12 @@ export class CreatePersonDto {
   @IsNotEmpty()
   lastName: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
+  @ApiProperty({
+    example: '1990-01-01',
+    description: 'Date of birth of the person in YYYY-MM-DD format',
+  })
   @IsDateString()
-  @Transform(({ value }) => value.toISOString(), { toClassOnly: true })
+  @Transform(({ value }) => new Date(value).toISOString())
   dateOfBirth?: string;
 
   @ApiProperty()

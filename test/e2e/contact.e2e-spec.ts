@@ -67,9 +67,11 @@ describe('ContactsController (e2e)', () => {
     expect(response.text).toContain('Found contact by email');
   });
 
-  it('/contacts/search/phone/:phoneNumber (GET) - Find contacts by phone number', async () => {
+  it('/contacts/search/phone (GET) - Find contacts by phone number and phone type', async () => {
+    const typeId = 1;
     const response = await request(app.getHttpServer())
-      .get(`/contacts/search/phone/${encodeURIComponent(phone_number)}`)
+      .get('/contacts/search/phone')
+      .query({ typeId, number: phone_number })
       .expect(200);
 
     expect(response.text).toContain('Found contact by phone number');

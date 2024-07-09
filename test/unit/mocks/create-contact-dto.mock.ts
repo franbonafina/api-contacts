@@ -10,13 +10,13 @@ const phone: CreatePhoneDto = {
 };
 
 export const createMockContactDto: CreateContactDto = {
-  person: {
+  personDto: {
     firstName: 'John',
     lastName: 'Doe',
     dateOfBirth: '1990-01-01',
     email: 'john.doe@example.com',
   },
-  addresses: [
+  addressesDtos: [
     {
       locality: 'New York',
       street: '123 Main St',
@@ -24,5 +24,5 @@ export const createMockContactDto: CreateContactDto = {
       notes: 'Apartment 101',
     },
   ],
-  phones: [phone],
+  phonesDtos: [phone],
 };
