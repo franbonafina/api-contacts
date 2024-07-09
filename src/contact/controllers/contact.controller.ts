@@ -89,7 +89,10 @@ export class ContactsController {
 
   @Get('search/personal-data')
   @ApiOperation({ summary: 'Search a contact by its personal information' })
-  @ApiResponse({ status: 200, description: 'Found contacts by search criteria' })
+  @ApiResponse({
+    status: 200,
+    description: 'Found contacts by search criteria',
+  })
   async findByQuery(@Query() queryDto: QueryPersonalDataDto) {
     const foundContacts = await this.searchContactsService.findByPersonalData(
       queryDto,

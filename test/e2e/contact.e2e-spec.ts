@@ -25,13 +25,13 @@ describe('ContactsController (e2e)', () => {
 
   it('/contacts/create (POST) - Create a new contact', async () => {
     const createDto = {
-      person: {
+      personDto: {
         firstName: 'John',
         lastName: 'Doe',
         dateOfBirth: '1990-01-01',
         email: email,
       },
-      addresses: [
+      addressesDtos: [
         {
           locality: 'New York',
           street: '123 Main St',
@@ -39,7 +39,7 @@ describe('ContactsController (e2e)', () => {
           notes: 'Apartment 101',
         },
       ],
-      phones: [
+      phonesDtos: [
         {
           number: phone_number,
           phoneType: {
@@ -59,9 +59,10 @@ describe('ContactsController (e2e)', () => {
     contactId = JSON.parse(response.text).data.id;
   });
 
-  it('/contacts/search/email/:email (GET) - Find contact by email', async () => {
+  it('/contacts/search/email (GET) - Find contact by email', async () => {
     const response = await request(app.getHttpServer())
-      .get(`/contacts/search/email/${encodeURIComponent(email)}`)
+      .get(`/contacts/search/email`)
+      .query({ email: email })
       .expect(200);
 
     expect(response.text).toContain('Found contact by email');
@@ -71,7 +72,7 @@ describe('ContactsController (e2e)', () => {
     const typeId = 1;
     const response = await request(app.getHttpServer())
       .get('/contacts/search/phone')
-      .query({ typeId, number: phone_number })
+      .query({ typeId, phoneNumber: phone_number })
       .expect(200);
 
     expect(response.text).toContain('Found contact by phone number');
